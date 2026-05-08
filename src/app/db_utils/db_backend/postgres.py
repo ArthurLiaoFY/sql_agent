@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import Any, Iterable, List, Optional
+from typing import Any, Iterable, List, Optional, Dict
 
 try:
     import psycopg
@@ -45,13 +45,17 @@ class PostgresConnection:
                 "只允許執行讀取查詢 (SELECT / WITH)，不允許新增欄位、更新或刪除等變更語句。"
             )
 
-    def execute_query(self, sql: str, params: Optional[Iterable[Any]] = None) -> "psycopg.Cursor":
+    def execute_query(
+        self, sql: str, params: Optional[Iterable[Any]] = None
+    ) -> "psycopg.Cursor":
         self._validate_readonly_query(sql)
         cursor = self._conn.cursor(row_factory=dict_row)
         cursor.execute(sql, tuple(params or []))
         return cursor
 
-    def fetch_one(self, sql: str, params: Optional[Iterable[Any]] = None) -> Optional[Any]:
+    def fetch_one(
+        self, sql: str, params: Optional[Iterable[Any]] = None
+    ) -> Optional[Any]:
         cursor = self.execute_query(sql, params)
         return cursor.fetchone()
 
@@ -59,7 +63,9 @@ class PostgresConnection:
         cursor = self.execute_query(sql, params)
         return cursor.fetchall()
 
-    def fetch_all_dicts(self, sql: str, params: Optional[Iterable[Any]] = None) -> List[dict[str, Any]]:
+    def fetch_all_dicts(
+        self, sql: str, params: Optional[Iterable[Any]] = None
+    ) -> List[dict[str, Any]]:
         rows = self.fetch_all(sql, params)
         return [dict(row) if not isinstance(row, dict) else row for row in rows]
 
@@ -77,3 +83,6 @@ class PostgresConnection:
             (table_name,),
         )
         return [row["column_name"] if isinstance(row, dict) else row[0] for row in rows]
+
+    def list_column_type(self, table_name: str) -> List[str]:
+        pass

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List, Optional
 
 from app.db_utils.db_backend.postgres import PostgresConnection
 from app.db_utils.db_backend.sqlite import SQLiteConnection
@@ -15,20 +15,22 @@ class DatabaseConnection:
 
     def __init__(self, config: dict[str, Any]) -> None:
         self._config = config
-        self.db_backend = str(config.get("DB_BACKEND", "sqlite")).strip().lower()
+        db_type = str(config.get("DB_TYPE", "sqlite")).strip().lower()
 
-        if self.db_backend == "sqlite":
-            database_path = config.get(self.db_backend, {}).get("DB_PATH")
+        if db_type in ("sqlite", "sqlite3"):
+            database_path = config.get("DB_PATH")
             if not database_path:
                 raise ValueError("SQLite 需要設定 DB_PATH。")
             self._backend = SQLiteConnection(database_path, readonly=True)
-        elif self.db_backend == "postgres":
-            dsn = config.get(self.db_backend, {}).get("DB_DSN")
+        elif db_type in ("postgres", "postgresql"):
+            dsn = config.get("DB_DSN")
             if not dsn:
                 dsn = self._build_postgres_dsn(config)
             self._backend = PostgresConnection(dsn, readonly=True)
         else:
-            raise ValueError(f"不支援的 DB_TYPE: {self.db_backend}")
+            raise ValueError(f"不支援的 DB_TYPE: {db_type}")
+
+        self.db_backend = db_type
 
     @classmethod
     def from_settings_file(cls, settings_path: str | Path) -> "DatabaseConnection":
@@ -47,11 +49,11 @@ class DatabaseConnection:
         return cls(config)
 
     def _build_postgres_dsn(self, config: dict[str, Any]) -> str:
-        user = config.get(self.db_backend, {}).get("DB_USER")
-        password = config.get(self.db_backend, {}).get("DB_PASSWORD")
-        host = config.get(self.db_backend, {}).get("DB_HOST", "localhost")
-        port = config.get(self.db_backend, {}).get("DB_PORT", 5432)
-        db_name = config.get(self.db_backend, {}).get("DB_NAME")
+        user = config.get("DB_USER")
+        password = config.get("DB_PASSWORD")
+        host = config.get("DB_HOST", "localhost")
+        port = config.get("DB_PORT", 5432)
+        db_name = config.get("DB_NAME")
 
         if not db_name:
             raise ValueError("PostgreSQL 需要設定 DB_NAME。")
@@ -90,3 +92,6 @@ class DatabaseConnection:
 
     def list_columns(self, table_name: str) -> List[str]:
         return self._backend.list_columns(table_name)
+
+    def list_column_type(self, table_name: str) -> Dict[str, str]:
+        return self._backend.list_column_type(table_name)

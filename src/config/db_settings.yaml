@@ -1,0 +1,3 @@
+DB_COLUMN_MEANING_JSON_PATH: /Users/wr80340/WorkSpace/sql_agent/data/dev_column_meaning.json
+DB_PATH: /Users/wr80340/WorkSpace/sql_agent/data/california_schools.sqlite
+DB_TYPE: sqlite

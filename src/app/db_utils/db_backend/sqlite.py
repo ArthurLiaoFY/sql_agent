@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 import sqlite3
 from pathlib import Path
-from typing import Any, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List, Optional
 
 _READONLY_SQL = re.compile(r"^\s*(?:WITH|SELECT)\b", re.IGNORECASE)
 
@@ -44,29 +44,42 @@ class SQLiteConnection:
                 "只允許執行讀取查詢 (SELECT / WITH)，不允許新增欄位、更新或刪除等變更語句。"
             )
 
-    def execute_query(self, sql: str, params: Optional[Iterable[Any]] = None) -> sqlite3.Cursor:
+    def execute_query(
+        self, sql: str, params: Optional[Iterable[Any]] = None
+    ) -> sqlite3.Cursor:
         self._validate_readonly_query(sql)
         return self._conn.execute(sql, tuple(params or []))
 
-    def fetch_one(self, sql: str, params: Optional[Iterable[Any]] = None) -> Optional[sqlite3.Row]:
+    def fetch_one(
+        self, sql: str, params: Optional[Iterable[Any]] = None
+    ) -> Optional[sqlite3.Row]:
         cursor = self.execute_query(sql, params)
         return cursor.fetchone()
 
-    def fetch_all(self, sql: str, params: Optional[Iterable[Any]] = None) -> List[sqlite3.Row]:
+    def fetch_all(
+        self, sql: str, params: Optional[Iterable[Any]] = None
+    ) -> List[sqlite3.Row]:
         cursor = self.execute_query(sql, params)
         return cursor.fetchall()
 
-    def fetch_all_dicts(self, sql: str, params: Optional[Iterable[Any]] = None) -> List[dict[str, Any]]:
+    def fetch_all_dicts(
+        self, sql: str, params: Optional[Iterable[Any]] = None
+    ) -> List[dict[str, Any]]:
         rows = self.fetch_all(sql, params)
         return [dict(row) for row in rows]
 
     def list_tables(self) -> List[str]:
-        rows = self.fetch_all(
+        rows = self._conn.execute(
             "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
         )
         return [row[0] for row in rows]
 
     def list_columns(self, table_name: str) -> List[str]:
         quoted_name = '"' + table_name.replace('"', '""') + '"'
-        rows = self.fetch_all(f"PRAGMA table_info({quoted_name})")
+        rows = self._conn.execute(f"PRAGMA table_info({quoted_name})")
         return [row[1] for row in rows]
+
+    def list_column_type(self, table_name: str) -> Dict[str, str]:
+        quoted_name = '"' + table_name.replace('"', '""') + '"'
+        rows = self._conn.execute(f"PRAGMA table_info({quoted_name})")
+        return {row[1]: "numeric" if row[2] != "TEXT" else "string" for row in rows}

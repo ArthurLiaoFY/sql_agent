@@ -1,8 +1,0 @@
-DB_COLUMN_MEANING_JSON_PATH: /Users/wr80340/Downloads/dev_20240627/dev_column_meaning.json
-DB_BACKEND: sqlite
-
-sqlite:
-  DB_PATH: /Users/wr80340/Downloads/dev_20240627/dev_databases/california_schools/california_schools.sqlite
-
-postgres:
-  DB_PATH: /Users/wr80340/Downloads/dev_20240627/postgres.db

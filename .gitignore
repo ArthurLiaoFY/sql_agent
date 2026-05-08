@@ -9,3 +9,7 @@ wheels/
 # Virtual environments
 .venv
 .env
+
+test/test_data/*
+test.py
+data/*
