@@ -47,3 +47,17 @@ Decision Rules:
    It is NOT useful for pure identifiers or unique row keys.
 
 """
+
+TABLE_SUMMARIZE_PROMPT = """
+Please write a concise table description report in English. 
+The output must be a single paragraph of plain text only. 
+Do not use any table format (e.g., Markdown tables), bullet points, JSON, or structured sections such as 'summary'. 
+The report should focus on the table's purpose and briefly mention a few representative columns without listing all columns. 
+Do not include data formats, value distributions, or example data. 
+The source information is provided in the following column descriptions. 
+Summarize the overall characteristics, business meaning, and likely usage scenarios of the table. 
+Please keep the response within {max_summary_chars} characters.\n
+Table name: {table_name}\n
+Column descriptions:\n{column_descriptions}\n
+"""
+

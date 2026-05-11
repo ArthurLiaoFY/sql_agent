@@ -4,9 +4,10 @@ from pathlib import Path
 from typing import Any
 
 from dotenv import load_dotenv
-from openai import OpenAI
 
+from app.llm.base_llm_client import BaseLLMClient
 from app.logger.logger import logger
+from app.prompts import TABLE_SUMMARIZE_PROMPT
 
 load_dotenv()
 
@@ -14,19 +15,8 @@ load_dotenv()
 class TableSchemaSummarizer:
     """Summarize a schema JSON file into per-table reports using an LLM."""
 
-    def __init__(self):
-        self.base_url = os.getenv("LLM_BASE_URL", None)
-        self.api_key = os.getenv("LLM_API_KEY", None)
-        self.model_name = os.getenv("LLM_MODEL_NAME")
-        if not self.base_url or not self.api_key:
-            raise RuntimeError(
-                "Missing LLM_BASE_URL/LLM_API_KEY or BASE_URL/API_KEY in .env"
-            )
-
-        if not self.model_name:
-            raise RuntimeError("Missing LLM_MODEL_NAME or MODEL_NAME in .env")
-
-        self.client = OpenAI(base_url=self.base_url, api_key=self.api_key)
+    def __init__(self, llm_client: BaseLLMClient):
+        self.llm_client = llm_client
 
     def load_schema(self, schema_path: str | Path) -> dict[str, dict[str, Any]]:
         schema_path = Path(schema_path)
@@ -37,7 +27,7 @@ class TableSchemaSummarizer:
         self,
         table_name: str,
         column_map: dict[str, dict[str, str]],
-        max_summary_chars: int = 1000,
+        max_summary_chars: int,
     ) -> str:
         """Generate a concise table summary report from table column short_schema values."""
         rows = []
@@ -47,17 +37,10 @@ class TableSchemaSummarizer:
                 continue
             rows.append(f"- {column_name}: {short_schema}")
 
-        prompt = (
-            "Please write a concise table description report in English. "
-            "The output must be a single paragraph of plain text only. "
-            "Do not use any table format (e.g., Markdown tables), bullet points, JSON, or structured sections such as 'summary'. "
-            "The report should focus on the table's purpose and briefly mention a few representative columns without listing all columns. "
-            "Do not include data formats, value distributions, or example data. "
-            "The source information is provided in the following column descriptions. "
-            "Summarize the overall characteristics, business meaning, and likely usage scenarios of the table. "
-            f"Please keep the response within {max_summary_chars} characters.\n"
-            f"Table name: {table_name}\n"
-            f"Column descriptions:\n{chr(10).join(rows)}\n"
+        prompt = TABLE_SUMMARIZE_PROMPT.format(
+            max_summary_chars=max_summary_chars,
+            table_name=table_name,
+            column_descriptions=chr(10).join(rows),
         )
         logger.info(f"Summarizing table schema: {table_name}.")
         response_text = self._create_response(prompt)
@@ -80,7 +63,7 @@ class TableSchemaSummarizer:
         return result
 
     def _create_response(self, prompt: str) -> str:
-        response = self.client.responses.create(model=self.model_name, input=prompt)
+        response = self.llm_client.invoke(input_query=prompt)
         if hasattr(response, "output_text") and response.output_text:
             return response.output_text.strip()
 

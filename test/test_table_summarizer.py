@@ -1,10 +1,21 @@
 import json
+import os
 
+from dotenv import load_dotenv
+
+from app.llm.openai_llm_client import OpenAILLMClient
 from app.table_summarizer import TableSchemaSummarizer
 
+load_dotenv()
 result = {}
 
-summarizer = TableSchemaSummarizer()
+summarizer = TableSchemaSummarizer(
+    llm_client=OpenAILLMClient(
+        base_url=os.getenv("LLM_BASE_URL"),
+        api_key=os.getenv("LLM_API_KEY"),
+        model_name=os.getenv("LLM_MODEL_NAME"),
+    )
+)
 reports = summarizer.summarize_schema_file("test/test_data/test_schema_output.json")
 
 for table_name, report in reports.items():
