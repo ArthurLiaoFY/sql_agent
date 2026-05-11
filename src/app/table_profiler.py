@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Literal
 from datasketch import MinHash
 
 from app.db_utils.db_connection import DatabaseConnection
+from app.logger.logger import logger
 from app.utils import serialize_minhash
 
 
@@ -63,20 +64,17 @@ class TableProfiler:
 
         # 分析每個欄位
 
-        profile = {
-            "table_name": self.table_name,
-            "total_records": total_records,
-            "columns": {},
-        }
+        profile = {}
 
         for col in columns:
+            logger.info(f"Profiling column: {col}")
             col_profile = self._profile_column(
                 column_name=col,
                 column_type=column_type.get(col),
                 total_records=total_records,
                 sample_k=sample_k,
             )
-            profile["columns"][col] = col_profile
+            profile[col] = col_profile
 
         return profile
 
@@ -103,11 +101,14 @@ class TableProfiler:
 
         # 基礎返回欄位
         result = {
+            "name": column_name,
             "type": column_type,
             "desc": self.db_col_meanings.get(f"{self.table_name}|{column_name}", ""),
             "null_count": null_count,
+            "null_ratio": round(null_count / total_records, ndigits=4),
             "distinct_count": distinct_count,
             "distinct_ratio": round(distinct_count / total_records, ndigits=4),
+            "total_records": total_records,
             "samples": samples,
         }
 

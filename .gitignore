@@ -13,3 +13,5 @@ wheels/
 test/test_data/*
 test.py
 data/*
+test/.DS_Store
+*.log

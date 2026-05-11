@@ -83,3 +83,8 @@ class SQLiteConnection:
         quoted_name = '"' + table_name.replace('"', '""') + '"'
         rows = self._conn.execute(f"PRAGMA table_info({quoted_name})")
         return {row[1]: "numeric" if row[2] != "TEXT" else "string" for row in rows}
+
+    def list_table_foreign_key_relationship(self, table_name: str) -> Dict[str, str]:
+        quoted_name = '"' + table_name.replace('"', '""') + '"'
+        rows = self._conn.execute(f"PRAGMA foreign_key_list({quoted_name})")
+        return {f"{table_name}.{row[3]}": f"{row[2]}.{row[4]}" for row in rows}

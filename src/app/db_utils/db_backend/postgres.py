@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import Any, Iterable, List, Optional, Dict
+from typing import Any, Dict, Iterable, List, Optional
 
 try:
     import psycopg
@@ -84,5 +84,57 @@ class PostgresConnection:
         )
         return [row["column_name"] if isinstance(row, dict) else row[0] for row in rows]
 
-    def list_column_type(self, table_name: str) -> List[str]:
-        pass
+    def list_column_type(self, table_name: str) -> Dict[str, str]:
+        rows = self.fetch_all(
+            "SELECT column_name, data_type FROM information_schema.columns "
+            "WHERE table_schema = 'public' AND table_name = %s ORDER BY ordinal_position",
+            (table_name,),
+        )
+        return {
+            row["column_name"] if isinstance(row, dict) else row[0]: row["data_type"]
+            if isinstance(row, dict)
+            else row[1]
+            for row in rows
+        }
+
+def list_table_foreign_key_relationship(
+    self,
+    table_name: str,
+) -> dict[str, str]:
+    rows = self.fetch_all(
+        """
+        SELECT
+            kcu.column_name,
+            ccu.table_name AS foreign_table_name,
+            ccu.column_name AS foreign_column_name
+        FROM information_schema.table_constraints AS tc
+        JOIN information_schema.key_column_usage AS kcu
+            ON tc.constraint_name = kcu.constraint_name
+            AND tc.constraint_schema = kcu.constraint_schema
+        JOIN information_schema.constraint_column_usage AS ccu
+            ON ccu.constraint_name = tc.constraint_name
+            AND ccu.constraint_schema = tc.constraint_schema
+        WHERE tc.constraint_type = 'FOREIGN KEY'
+            AND tc.table_schema = 'public'
+            AND tc.table_name = %s
+        """,
+        (table_name,),
+    )
+
+    relationships = {}
+
+    for row in rows:
+        if isinstance(row, dict):
+            source_column = row["column_name"]
+            foreign_table = row["foreign_table_name"]
+            foreign_column = row["foreign_column_name"]
+        else:
+            source_column = row[0]
+            foreign_table = row[1]
+            foreign_column = row[2]
+
+        relationships[
+            f"{table_name}.{source_column}"
+        ] = f"{foreign_table}.{foreign_column}"
+
+    return relationships

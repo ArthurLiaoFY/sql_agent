@@ -5,22 +5,34 @@ import os
 from app.db_utils.db_connection import DatabaseConnection
 from app.table_profiler import TableProfiler
 
+print("Connecting to database...")
 db = DatabaseConnection.from_settings_file("./src/config/db_settings.yaml")
 
 file_path = r"./data/dev_column_meaning.json"
-
+print(f"Loading column meanings from {file_path}...")
 with open(file_path, "r") as f:
     data = json.load(f)
+
+print(f"Loaded meanings for {len(data)} columns")
+
 # %%
-tp = TableProfiler(
-    db_connection=db,
-    db_column_meanings=data,
-    table_name="frpm",
-)
-profile_data = tp.profile(sample_k=5)
+print("Profiling tables...")
+profile_data = {}
+tables = db.list_tables()
+print(f"Found {len(tables)} tables: {tables}")
+
+for table in tables:
+    print(f"Profiling table: {table}")
+    tp = TableProfiler(
+        db_connection=db,
+        db_column_meanings=data,
+        table_name=table,
+    )
+    profile_data[table] = tp.profile(sample_k=5)
+    print(f"Completed profiling for {table}")
 
 file_path = "./test/test_data/profile_results.json"
-
+print(f"Saving profile results to {file_path}...")
 os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
 # 將資料存入 local

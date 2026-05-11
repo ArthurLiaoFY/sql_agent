@@ -95,3 +95,6 @@ class DatabaseConnection:
 
     def list_column_type(self, table_name: str) -> Dict[str, str]:
         return self._backend.list_column_type(table_name)
+
+    def list_table_foreign_key_relationship(self, table_name: str) -> Dict[str, str]:
+        return self._backend.list_table_foreign_key_relationship(table_name)

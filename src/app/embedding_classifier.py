@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from openai import OpenAI
 from pydantic import BaseModel
 
-from .prompts import (
+from app.prompts import (
     COMMON_COLUMN_PROFILE,
     NUMERIC_COLUMN_PROFILE,
     SHOULD_COLUMN_EMBED_SYS_PROMPT,
@@ -35,10 +35,10 @@ class EmbeddingClassifier:
         """
         self.client = outlines.from_openai(
             client=OpenAI(
-                base_url=os.getenv("BASE_URL"),
-                api_key=os.getenv("API_KEY"),
+                base_url=os.getenv("LLM_BASE_URL"),
+                api_key=os.getenv("LLM_API_KEY"),
             ),
-            model_name=os.getenv("MODEL_NAME"),
+            model_name=os.getenv("LLM_MODEL_NAME"),
         )
 
     def classify_column(self, column_profile: Dict[str, Any]) -> Dict[str, Any]:
